@@ -1,5 +1,69 @@
 import React, { useState } from "react";
 
+// Format pickDateTime from ISO 8601 to readable format
+const formatPickDateTime = (dateTimeString) => {
+  if (!dateTimeString) return "";
+  try {
+    const date = new Date(dateTimeString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  } catch (error) {
+    return dateTimeString; // Return original if parsing fails
+  }
+};
+
+// Format timeslot from 12-hour AM/PM to 24-hour format
+const formatTimeslot = (timeslotString) => {
+  if (!timeslotString) return "";
+  try {
+    // Remove extra spaces and split by ".."
+    const cleaned = timeslotString.trim().replace(/\s+/g, ' ');
+    const parts = cleaned.split('..');
+    
+    if (parts.length !== 2) return timeslotString; // Return original if format is unexpected
+    
+    const formatTime = (timeStr) => {
+      const trimmed = timeStr.trim();
+      // Extract time and AM/PM
+      const match = trimmed.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) return trimmed;
+      
+      let hours = parseInt(match[1]);
+      const minutes = match[2];
+      const seconds = match[3];
+      const period = match[4].toUpperCase();
+      
+      // Convert to 24-hour format
+      if (period === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      
+      return `${String(hours).padStart(2, '0')}:${minutes}:${seconds}`;
+    };
+    
+    const startTime = formatTime(parts[0]);
+    const endTime = formatTime(parts[1]);
+    
+    return `${startTime}..${endTime}`;
+  } catch (error) {
+    return timeslotString; // Return original if parsing fails
+  }
+};
+
+// Format codTask from boolean to integer
+const formatCodTask = (codTaskValue) => {
+  if (codTaskValue === true) return 1;
+  if (codTaskValue === false) return 0;
+  return codTaskValue; // Return original if not boolean
+};
+
 function transformData(input) {
   if (!input.value || !Array.isArray(input.value)) return [];
 
@@ -34,7 +98,7 @@ function transformData(input) {
         svcName: svc.svcName,
         svcProviderName: svc.serviceProviderName,
         svcDate: svc.date,
-        timeslot: svc.timeslot,
+        timeslot: formatTimeslot(svc.timeslot),
         status: svc.status,
         gdval: 0,
         gw: gw.toFixed(4),
@@ -60,7 +124,7 @@ function transformData(input) {
       serviceAmountVat: serviceAmount,
       itemCnt: order.itemCnt,
       pkgs: order.pkgs,
-      pickDateTime: order.pickDateTime,
+      pickDateTime: formatPickDateTime(order.pickDateTime),
       payStatus: "Paid",
       shipCust: order.shipCust,
       shipAddr: order.shipAddr,
@@ -69,7 +133,7 @@ function transformData(input) {
       shipCity: order.shipCity,
       shipPhone: order.shipPhone,
       shipEmail: order.shipEmail,
-      codTask: order.codTask,
+      codTask: formatCodTask(order.codTask),
       codAmount: order.codAmount,
       orderCmt: order.orderCmt,
       services
