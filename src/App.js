@@ -1,9 +1,25 @@
 import React, { useState } from "react";
 
-// Format pickDateTime from ISO 8601 to readable format
+// Enhanced format pickDateTime with validation for invalid dates
 const formatPickDateTime = (dateTimeString) => {
   if (!dateTimeString) return "";
+  
   try {
+    // Check if it's the invalid date "0001-01-01T00:00:00Z"
+    if (dateTimeString === "0001-01-01T00:00:00Z") {
+      // Use today's date instead
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const hours = String(today.getHours()).padStart(2, '0');
+      const minutes = String(today.getMinutes()).padStart(2, '0');
+      const seconds = String(today.getSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Normal date processing
     const date = new Date(dateTimeString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -11,6 +27,7 @@ const formatPickDateTime = (dateTimeString) => {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
+    
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   } catch (error) {
     return dateTimeString; // Return original if parsing fails
@@ -68,7 +85,7 @@ const formatCodTask = (codTaskValue) => {
 const generateCSV = (data) => {
   if (!data || data.length === 0) return "";
 
-  // CSV Headers
+  // CSV Headers - Removed pickDateTimeChanged field
   const headers = [
     'soNo', 'storeNo', 'eCommOrderNo', 'salesChannel', 'orderDate', 
     'productAmount', 'productAmountVat', 'serviceAmount', 'serviceAmountVat', 
@@ -157,7 +174,7 @@ const generateCSV = (data) => {
   return csvRows.join('\n');
 };
 
-// Enhanced CSV download with UTF-8 BOM for Excel compatibility
+// Download CSV file
 const downloadCSV = (csvContent, filename = 'tms_data.csv') => {
   // Add UTF-8 BOM for Excel compatibility
   const BOM = '\uFEFF';
@@ -291,6 +308,15 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  
+  // POST Request Configuration
+  const [postUrl, setPostUrl] = useState("");
+  const [postToken, setPostToken] = useState("");
+  const [postHeaderName, setPostHeaderName] = useState("");
+  const [postHeaderValue, setPostHeaderValue] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+  const [postResponse, setPostResponse] = useState("");
+  const [showPostConfig, setShowPostConfig] = useState(false);
 
   const handleTransform = () => {
     setIsLoading(true);
@@ -322,6 +348,7 @@ export default function App() {
     setCsvOutput("");
     setError("");
     setSuccess("");
+    setPostResponse("");
   };
 
   const handleCopyOutput = () => {
@@ -346,6 +373,66 @@ export default function App() {
       downloadCSV(csvOutput, `tms_data_${timestamp}.csv`);
       setSuccess("✅ CSV file downloaded with UTF-8 encoding!");
       setTimeout(() => setSuccess(""), 2000);
+    }
+  };
+
+  const handlePostRequest = async () => {
+    if (!postUrl.trim()) {
+      setError("❌ Please enter a valid URL");
+      return;
+    }
+
+    if (!output) {
+      setError("❌ Please transform data first before sending POST request");
+      return;
+    }
+
+    setIsPosting(true);
+    setError("");
+    setSuccess("");
+    setPostResponse("");
+
+    try {
+      // Build headers object
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...(postToken ? { 'Authorization': `Bearer ${postToken}` } : {}),
+        ...(postHeaderName && postHeaderValue ? { [postHeaderName]: postHeaderValue } : {})
+      };
+
+      console.log('Sending POST request to:', postUrl);
+      console.log('Headers:', headers);
+      console.log('Body:', output);
+
+      const response = await fetch(postUrl, {
+        method: 'POST',
+        headers,
+        body: output
+      });
+
+      const responseText = await response.text();
+      let responseData;
+      
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = responseText;
+      }
+
+      setPostResponse(JSON.stringify(responseData, null, 2));
+      
+      if (response.ok) {
+        setSuccess(`✅ POST request successful! Status: ${response.status}`);
+      } else {
+        setError(`⚠️ POST request failed! Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('POST request error:', error);
+      setError(`❌ POST request error: ${error.message}`);
+      setPostResponse("");
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -450,7 +537,7 @@ export default function App() {
           color: "#6c757d",
           fontSize: "16px"
         }}>
-          Transform your TMS JSON data with automatic formatting and export to CSV.
+          Transform your TMS JSON data with automatic formatting, export to CSV, and send POST requests.
         </p>
       </div>
 
@@ -519,7 +606,172 @@ export default function App() {
         >
          ️ Clear All
         </button>
+        <button
+          onClick={() => setShowPostConfig(!showPostConfig)}
+          style={{
+            padding: "10px 16px",
+            backgroundColor: "#17a2b8",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "500",
+            transition: "background-color 0.2s"
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#138496"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "#17a2b8"}
+        >
+          🌐 POST Request Config
+        </button>
       </div>
+
+      {/* POST Request Configuration */}
+      {showPostConfig && (
+        <div style={{
+          backgroundColor: "white",
+          borderRadius: "8px",
+          padding: "20px",
+          marginBottom: "24px",
+          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
+        }}>
+          <h4 style={{ margin: "0 0 16px 0", color: "#2c3e50" }}>
+            🌐 POST Request Configuration
+          </h4>
+          
+          {/* URL Input */}
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: "500" }}>
+              Target URL:
+            </label>
+            <input
+              type="url"
+              value={postUrl}
+              onChange={(e) => setPostUrl(e.target.value)}
+              placeholder="https://api.example.com/endpoint"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "2px solid #e9ecef",
+                borderRadius: "4px",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+
+          {/* Bearer Token */}
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: "500" }}>
+              Bearer Token (Optional):
+            </label>
+            <input
+              type="password"
+              value={postToken}
+              onChange={(e) => setPostToken(e.target.value)}
+              placeholder="Paste your Bearer token here"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "2px solid #e9ecef",
+                borderRadius: "4px",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+
+          {/* Custom Header */}
+          <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+            <div style={{ flex: "1" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: "500" }}>
+                Custom Header Name:
+              </label>
+              <input
+                type="text"
+                value={postHeaderName}
+                onChange={(e) => setPostHeaderName(e.target.value)}
+                placeholder="e.g., x-api-key, x-custom-header"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "2px solid #e9ecef",
+                  borderRadius: "4px",
+                  fontSize: "14px"
+                }}
+              />
+            </div>
+            <div style={{ flex: "1" }}>
+              <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: "500" }}>
+                Custom Header Value:
+              </label>
+              <input
+                type="text"
+                value={postHeaderValue}
+                onChange={(e) => setPostHeaderValue(e.target.value)}
+                placeholder="Your header value"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "2px solid #e9ecef",
+                  borderRadius: "4px",
+                  fontSize: "14px"
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Send Button */}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={handlePostRequest}
+              disabled={isPosting || !postUrl.trim() || !output}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: isPosting ? "#6c757d" : "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: isPosting ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                transition: "background-color 0.2s"
+              }}
+              onMouseOver={(e) => {
+                if (!isPosting) e.target.style.backgroundColor = "#218838";
+              }}
+              onMouseOut={(e) => {
+                if (!isPosting) e.target.style.backgroundColor = "#28a745";
+              }}
+            >
+              {isPosting ? "⏳ Sending..." : "📤 Send POST Request"}
+            </button>
+          </div>
+          
+          {/* POST Response */}
+          {postResponse && (
+            <div style={{ marginTop: "16px" }}>
+              <h5 style={{ margin: "0 0 8px 0", color: "#2c3e50" }}>
+                📥 Response:
+              </h5>
+              <textarea
+                rows={8}
+                value={postResponse}
+                readOnly
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "2px solid #e9ecef",
+                  borderRadius: "4px",
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                  backgroundColor: "#f8f9fa",
+                  resize: "vertical"
+                }}
+                placeholder="Response will appear here..."
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
         <div style={{ flex: "1", minWidth: "500px" }}>
@@ -737,7 +989,7 @@ export default function App() {
         border: "1px solid #bbdefb"
       }}>
         <h5 style={{ margin: "0 0 12px 0", color: "#1565c0" }}>
-          📋 Enhanced CSV Formatting Features:
+          📋 Enhanced Features:
         </h5>
         <ul style={{ 
           margin: 0, 
@@ -746,12 +998,11 @@ export default function App() {
           fontSize: "14px",
           lineHeight: "1.6"
         }}>
-          <li><strong>UTF-8 BOM:</strong> Added for Excel compatibility</li>
-          <li><strong>Proper Quote Escaping:</strong> All fields wrapped in quotes with "" escaping</li>
-          <li><strong>Single-line JSON:</strong> Services JSON converted to single line</li>
-          <li><strong>Hidden Character Cleanup:</strong> Removes newlines, tabs, and special characters</li>
-          <li><strong>Empty Field Handling:</strong> Proper empty field representation</li>
-          <li><strong>Postman Compatible:</strong> Optimized for Postman CSV parsing</li>
+          <li><strong>JSON Transformation:</strong> Format pickDateTime, timeslot, and codTask</li>
+          <li><strong>Invalid Date Handling:</strong> Replace "0001-01-01T00:00:00Z" with today's date</li>
+          <li><strong>CSV Export:</strong> UTF-8 encoded with proper escaping</li>
+          <li><strong>POST Requests:</strong> Send transformed JSON to any API endpoint</li>
+          <li><strong>Authentication:</strong> Bearer token and custom header support</li>
         </ul>
       </div>
     </div>
