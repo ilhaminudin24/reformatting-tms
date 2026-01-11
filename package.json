@@ -2,7 +2,7 @@
   "name": "reformatting-tms",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://ilhaminudin24.github.io/reformatting-tms",
+  "homepage": "https://tms.ilhmndn.site",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
@@ -43,4 +43,3 @@
     "gh-pages": "^6.3.0"
   }
 }
-

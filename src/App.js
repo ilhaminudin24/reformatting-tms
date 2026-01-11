@@ -198,6 +198,59 @@ const downloadCSV = (csvContent, filename = 'tms_data.csv') => {
   URL.revokeObjectURL(url);
 };
 
+// Download individual order as JSON file
+// Download individual order as JSON file (wrapped in array [])
+const downloadOrderJSON = (order, orderIndex) => {
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  const filename = `order_${order.soNo || orderIndex + 1}_${timestamp}.json`;
+  
+  const jsonContent = JSON.stringify([order], null, 2);   // ⬅️ dibungkus array
+  const blob = new Blob([jsonContent], { 
+    type: 'application/json;charset=utf-8'
+  });
+  
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Clean up the URL object
+  URL.revokeObjectURL(url);
+};
+
+// Download all orders as separate JSON files
+const downloadAllOrders = (orders) => {
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  
+  orders.forEach((order, index) => {
+    // Add a small delay between downloads to prevent browser blocking
+    setTimeout(() => {
+      const filename = `order_${order.soNo || index + 1}_${timestamp}.json`;
+      
+      const jsonContent = JSON.stringify([order], null, 2); // hasil [ { ... } ]
+      const blob = new Blob([jsonContent], { 
+        type: 'application/json;charset=utf-8'
+      });
+      
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+    }, index * 100); // 100ms delay between each download
+  });
+};
+
 function transformData(input) {
   // Handle both original TMS format and already transformed format
   let orders = [];
@@ -326,6 +379,14 @@ export default function App() {
     try {
       const parsed = JSON.parse(input);
       const result = transformData(parsed);
+      
+      // Debug: Log order information
+      console.log("Transformed orders:", result.map(order => ({
+        soNo: order.soNo,
+        shipCust: order.shipCust,
+        itemCnt: order.itemCnt
+      })));
+      
       setOutput(JSON.stringify(result, null, 2));
       
       // Generate CSV
@@ -373,6 +434,25 @@ export default function App() {
       downloadCSV(csvOutput, `tms_data_${timestamp}.csv`);
       setSuccess("✅ CSV file downloaded with UTF-8 encoding!");
       setTimeout(() => setSuccess(""), 2000);
+    }
+  };
+
+  const handleDownloadOrder = (order, orderIndex) => {
+    downloadOrderJSON(order, orderIndex);
+    setSuccess(`✅ Order ${order.soNo || orderIndex + 1} downloaded as JSON!`);
+    setTimeout(() => setSuccess(""), 2000);
+  };
+
+  const handleDownloadAllOrders = () => {
+    try {
+      const parsedOutput = JSON.parse(output);
+      if (Array.isArray(parsedOutput) && parsedOutput.length > 1) {
+        downloadAllOrders(parsedOutput);
+        setSuccess(`✅ Started downloading ${parsedOutput.length} orders as separate JSON files!`);
+        setTimeout(() => setSuccess(""), 3000);
+      }
+    } catch (e) {
+      setError("❌ Error downloading orders. Please try again.");
     }
   };
 
@@ -499,12 +579,72 @@ export default function App() {
               "NoOfPkgs": 3
             }
           ]
+        },
+        {
+          "@odata.etag": "W/\"JzQ0O1JJMWZncGdDNnd5cGY0dnk4b2xON1Z4L2lNcUtUdlpYeCtibzZHOVIvQ0U9MTswMDsn\"",
+          "id": "f5f72e91-197b-5807-cd9f-54g2befg2b95",
+          "shipRef": "60325068658",
+          "storeNo": "603",
+          "secondRef": "157303792",
+          "salesChannel": "ECOM",
+          "orderDate": "2025-06-28",
+          "productAmount": 3200000,
+          "productAmountVat": 3500000,
+          "itemCnt": 2,
+          "pkgs": 2,
+          "payStatus": "",
+          "shipCust": "sarah",
+          "shipAddr": "jalan utama no 123",
+          "locationCode": "apartment",
+          "shipPostal": "16520",
+          "pickDateTime": "0001-01-01T00:00:00Z",
+          "shipCity": "Jakarta Selatan",
+          "shipPhone": "81234567890",
+          "shipEmail": "sarah@mail.com",
+          "orderCmt": "",
+          "codTask": false,
+          "codAmount": 0,
+          "dfCreateDeliveryOrderServices": [
+            {
+              "@odata.etag": "W/\"JzQ0O2x5WVZSMk02Z0djOEFseENBT0RWNndNUXhITFIzUkhIR2JucFlKSFo0QmM9MTswMDsn\"",
+              "documentId": "f5f72e91-197b-5807-cd9f-54g2befg2b95",
+              "docLineNo": 1,
+              "svcOrdNo": "60325149542",
+              "svcItemNo": "HD PARCEL",
+              "svcName": "Home Delivery Parcel Ecommerce",
+              "serviceProviderName": "DHL PARCEL",
+              "date": "2025-07-04",
+              "timeslot": " 10:00:00 AM.. 6:00:00 PM",
+              "status": "Service Provider Contacted",
+              "gdval": 0,
+              "prxOrg": 150000,
+              "prxVat": 150000,
+              "NoOfPkgs": 2,
+              "svcCmt": ""
+            }
+          ],
+          "dfCreateDeliveryOrderServiceItems": [
+            {
+              "@odata.etag": "W/\"JzQ0O05ndHZvcGxOVDVnK1hGQUgrckNVWVJVZlhRK3NqMWovdWFhUnNXR2FmUkE9MTswMDsn\"",
+              "documentId": "f5f72e91-197b-5807-cd9f-54g2befg2b95",
+              "lineNoIMV": 1,
+              "svcOrdNo": "60325149542",
+              "sequence": 10000,
+              "itemNo": "70378684",
+              "itemDesc": "HEMNES N WRD 2DR+3DRW 124X60X201 WHITE AP",
+              "quantity": 1,
+              "weight": 85.5,
+              "volume": 0.22,
+              "unitPrice": 3500000,
+              "NoOfPkgs": 2
+            }
+          ]
         }
       ]
     };
     setInput(JSON.stringify(sampleData, null, 2));
     setError("");
-    setSuccess(" Sample data loaded!");
+    setSuccess("✅ Sample data with 2 unique orders loaded!");
     setTimeout(() => setSuccess(""), 2000);
   };
 
@@ -947,6 +1087,116 @@ export default function App() {
           />
         </div>
       )}
+
+      {/* Individual Orders Section */}
+      {output && (() => {
+        try {
+          const parsedOutput = JSON.parse(output);
+          if (Array.isArray(parsedOutput) && parsedOutput.length > 1) {
+            return (
+              <div style={{ marginTop: "24px" }}>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px"
+                }}>
+                  <h4 style={{ margin: 0, color: "#2c3e50", fontSize: "18px" }}>
+                    📦 Individual Orders ({parsedOutput.length} orders)
+                  </h4>
+                  <button
+                    onClick={handleDownloadAllOrders}
+                    style={{
+                      padding: "10px 20px",
+                      backgroundColor: "#6f42c1",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      transition: "background-color 0.2s"
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = "#5a32a3"}
+                    onMouseOut={(e) => e.target.style.backgroundColor = "#6f42c1"}
+                  >
+                    📥 Download All Orders ({parsedOutput.length})
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {parsedOutput.map((order, index) => (
+                    <div key={index} style={{
+                      backgroundColor: "white",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                      border: "1px solid #e9ecef"
+                    }}>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "12px"
+                      }}>
+                        <div>
+                          <h5 style={{ margin: "0 0 4px 0", color: "#2c3e50", fontSize: "16px" }}>
+                            Order #{index + 1}: {order.soNo || 'N/A'}
+                          </h5>
+                          <p style={{ margin: "0", color: "#6c757d", fontSize: "14px" }}>
+                            Customer: {order.shipCust || 'N/A'} | Store: {order.storeNo || 'N/A'} | Items: {order.itemCnt || 0}
+                          </p>
+                          <p style={{ margin: "4px 0 0 0", color: "#28a745", fontSize: "12px", fontWeight: "500" }}>
+                            📄 File: order_{order.soNo || index + 1}_{new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadOrder(order, index)}
+                          style={{
+                            padding: "8px 16px",
+                            backgroundColor: "#28a745",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            transition: "background-color 0.2s"
+                          }}
+                          onMouseOver={(e) => e.target.style.backgroundColor = "#218838"}
+                          onMouseOut={(e) => e.target.style.backgroundColor = "#28a745"}
+                        >
+                          💾 Download Order JSON
+                        </button>
+                      </div>
+                      <div style={{
+                        backgroundColor: "#f8f9fa",
+                        borderRadius: "4px",
+                        padding: "12px",
+                        maxHeight: "200px",
+                        overflow: "auto"
+                      }}>
+                        <pre style={{
+                          margin: 0,
+                          fontSize: "12px",
+                          fontFamily: "monospace",
+                          color: "#495057",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word"
+                        }}>
+                          {JSON.stringify(order, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        } catch (e) {
+          return null;
+        }
+      })()}
       
       <div style={{ 
         display: "flex", 
@@ -1001,6 +1251,8 @@ export default function App() {
           <li><strong>JSON Transformation:</strong> Format pickDateTime, timeslot, and codTask</li>
           <li><strong>Invalid Date Handling:</strong> Replace "0001-01-01T00:00:00Z" with today's date</li>
           <li><strong>CSV Export:</strong> UTF-8 encoded with proper escaping</li>
+          <li><strong>Individual Order Downloads:</strong> Download each order as separate JSON file</li>
+          <li><strong>Bulk Download:</strong> Download all orders at once as separate JSON files</li>
           <li><strong>POST Requests:</strong> Send transformed JSON to any API endpoint</li>
           <li><strong>Authentication:</strong> Bearer token and custom header support</li>
         </ul>
