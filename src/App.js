@@ -3,7 +3,7 @@ import React, { useState } from "react";
 // Enhanced format pickDateTime with validation for invalid dates
 const formatPickDateTime = (dateTimeString) => {
   if (!dateTimeString) return "";
-  
+
   try {
     // Check if it's the invalid date "0001-01-01T00:00:00Z"
     if (dateTimeString === "0001-01-01T00:00:00Z") {
@@ -15,10 +15,10 @@ const formatPickDateTime = (dateTimeString) => {
       const hours = String(today.getHours()).padStart(2, '0');
       const minutes = String(today.getMinutes()).padStart(2, '0');
       const seconds = String(today.getSeconds()).padStart(2, '0');
-      
+
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
-    
+
     // Normal date processing
     const date = new Date(dateTimeString);
     const year = date.getFullYear();
@@ -27,7 +27,7 @@ const formatPickDateTime = (dateTimeString) => {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    
+
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   } catch (error) {
     return dateTimeString; // Return original if parsing fails
@@ -41,33 +41,33 @@ const formatTimeslot = (timeslotString) => {
     // Remove extra spaces and split by ".."
     const cleaned = timeslotString.trim().replace(/\s+/g, ' ');
     const parts = cleaned.split('..');
-    
+
     if (parts.length !== 2) return timeslotString; // Return original if format is unexpected
-    
+
     const formatTime = (timeStr) => {
       const trimmed = timeStr.trim();
       // Extract time and AM/PM
       const match = trimmed.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
       if (!match) return trimmed;
-      
+
       let hours = parseInt(match[1]);
       const minutes = match[2];
       const seconds = match[3];
       const period = match[4].toUpperCase();
-      
+
       // Convert to 24-hour format
       if (period === 'PM' && hours !== 12) {
         hours += 12;
       } else if (period === 'AM' && hours === 12) {
         hours = 0;
       }
-      
+
       return `${String(hours).padStart(2, '0')}:${minutes}:${seconds}`;
     };
-    
+
     const startTime = formatTime(parts[0]);
     const endTime = formatTime(parts[1]);
-    
+
     return `${startTime}..${endTime}`;
   } catch (error) {
     return timeslotString; // Return original if parsing fails
@@ -87,19 +87,19 @@ const generateCSV = (data) => {
 
   // CSV Headers - Removed pickDateTimeChanged field
   const headers = [
-    'soNo', 'storeNo', 'eCommOrderNo', 'salesChannel', 'orderDate', 
-    'productAmount', 'productAmountVat', 'serviceAmount', 'serviceAmountVat', 
-    'itemCnt', 'pkgs', 'pickDateTime', 'payStatus', 'shipCust', 'shipAddr', 
-    'locationCode', 'shipPostal', 'shipCity', 'shipPhone', 'shipEmail', 
+    'soNo', 'storeNo', 'eCommOrderNo', 'salesChannel', 'orderDate',
+    'productAmount', 'productAmountVat', 'serviceAmount', 'serviceAmountVat',
+    'itemCnt', 'pkgs', 'pickDateTime', 'payStatus', 'shipCust', 'shipAddr',
+    'locationCode', 'shipPostal', 'shipCity', 'shipPhone', 'shipEmail',
     'codTask', 'codAmount', 'orderCmt', 'services'
   ];
 
   // Enhanced CSV field escaping with proper quote handling
   const escapeCSVField = (field) => {
     if (field === null || field === undefined || field === "") return "";
-    
+
     const stringField = String(field);
-    
+
     // Clean the string: remove hidden characters and normalize newlines
     const cleanedField = stringField
       .replace(/\r\n/g, ' ') // Replace Windows line breaks
@@ -108,7 +108,7 @@ const generateCSV = (data) => {
       .replace(/\t/g, ' ')   // Replace tabs
       .replace(/\s+/g, ' ')  // Normalize multiple spaces
       .trim();
-    
+
     // Always wrap in quotes for consistency and to handle special characters
     // This ensures proper UTF-8 handling and prevents parsing issues
     return `"${cleanedField.replace(/"/g, '""')}"`;
@@ -117,11 +117,11 @@ const generateCSV = (data) => {
   // Convert services array to single-line JSON string for CSV
   const servicesToCSV = (services) => {
     if (!services || services.length === 0) return "";
-    
+
     try {
       // Convert to JSON and ensure it's a single line
       const jsonString = JSON.stringify(services);
-      
+
       // Clean the JSON string to ensure it's safe for CSV
       const cleanedJson = jsonString
         .replace(/\r\n/g, ' ') // Replace Windows line breaks
@@ -130,7 +130,7 @@ const generateCSV = (data) => {
         .replace(/\t/g, ' ')   // Replace tabs
         .replace(/\s+/g, ' ')  // Normalize multiple spaces
         .trim();
-      
+
       // The JSON is already properly escaped, just wrap in quotes
       return `"${cleanedJson.replace(/"/g, '""')}"`;
     } catch (error) {
@@ -179,12 +179,12 @@ const downloadCSV = (csvContent, filename = 'tms_data.csv') => {
   // Add UTF-8 BOM for Excel compatibility
   const BOM = '\uFEFF';
   const csvWithBOM = BOM + csvContent;
-  
+
   // Create blob with UTF-8 encoding
-  const blob = new Blob([csvWithBOM], { 
+  const blob = new Blob([csvWithBOM], {
     type: 'text/csv;charset=utf-8'
   });
-  
+
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
@@ -193,7 +193,7 @@ const downloadCSV = (csvContent, filename = 'tms_data.csv') => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   // Clean up the URL object
   URL.revokeObjectURL(url);
 };
@@ -203,12 +203,12 @@ const downloadCSV = (csvContent, filename = 'tms_data.csv') => {
 const downloadOrderJSON = (order, orderIndex) => {
   const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
   const filename = `order_${order.soNo || orderIndex + 1}_${timestamp}.json`;
-  
+
   const jsonContent = JSON.stringify([order], null, 2);   // ⬅️ dibungkus array
-  const blob = new Blob([jsonContent], { 
+  const blob = new Blob([jsonContent], {
     type: 'application/json;charset=utf-8'
   });
-  
+
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
@@ -217,7 +217,7 @@ const downloadOrderJSON = (order, orderIndex) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   // Clean up the URL object
   URL.revokeObjectURL(url);
 };
@@ -225,17 +225,17 @@ const downloadOrderJSON = (order, orderIndex) => {
 // Download all orders as separate JSON files
 const downloadAllOrders = (orders) => {
   const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-  
+
   orders.forEach((order, index) => {
     // Add a small delay between downloads to prevent browser blocking
     setTimeout(() => {
       const filename = `order_${order.soNo || index + 1}_${timestamp}.json`;
-      
+
       const jsonContent = JSON.stringify([order], null, 2); // hasil [ { ... } ]
-      const blob = new Blob([jsonContent], { 
+      const blob = new Blob([jsonContent], {
         type: 'application/json;charset=utf-8'
       });
-      
+
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
@@ -244,7 +244,7 @@ const downloadAllOrders = (orders) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up the URL object
       URL.revokeObjectURL(url);
     }, index * 100); // 100ms delay between each download
@@ -254,7 +254,7 @@ const downloadAllOrders = (orders) => {
 function transformData(input) {
   // Handle both original TMS format and already transformed format
   let orders = [];
-  
+
   if (input.value && Array.isArray(input.value)) {
     // Original TMS format with @odata.context and value array
     orders = input.value;
@@ -361,7 +361,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  
+
   // POST Request Configuration
   const [postUrl, setPostUrl] = useState("");
   const [postToken, setPostToken] = useState("");
@@ -371,28 +371,106 @@ export default function App() {
   const [postResponse, setPostResponse] = useState("");
   const [showPostConfig, setShowPostConfig] = useState(false);
 
+  // Multi-Filter State
+  const [filters, setFilters] = useState([]);
+
+  // Filterable Fields Configuration (Order + Nested Service fields)
+  const FILTERABLE_FIELDS = [
+    // Order-level fields
+    { key: "soNo", label: "SO Number", type: "text", nested: false },
+    { key: "storeNo", label: "Store No", type: "text", nested: false },
+    { key: "eCommOrderNo", label: "E-Comm Order No", type: "text", nested: false },
+    { key: "salesChannel", label: "Sales Channel", type: "text", nested: false },
+    { key: "orderDate", label: "Order Date", type: "date", nested: false },
+    { key: "itemCnt", label: "Item Count", type: "number", nested: false },
+    { key: "pkgs", label: "Packages", type: "number", nested: false },
+    { key: "shipCust", label: "Customer", type: "text", nested: false },
+    { key: "shipCity", label: "City", type: "text", nested: false },
+    { key: "shipPostal", label: "Postal Code", type: "text", nested: false },
+    { key: "codTask", label: "COD Task", type: "boolean", nested: false },
+    { key: "codAmount", label: "COD Amount", type: "number", nested: false },
+    // Service-level fields (nested in services array)
+    { key: "services.status", label: "🔧 Service Status", type: "text", nested: true, nestedKey: "status" },
+    { key: "services.svcProviderName", label: "🔧 Service Provider", type: "text", nested: true, nestedKey: "svcProviderName" },
+    { key: "services.svcName", label: "🔧 Service Name", type: "text", nested: true, nestedKey: "svcName" },
+    { key: "services.svcDate", label: "🔧 Service Date", type: "date", nested: true, nestedKey: "svcDate" }
+  ];
+
+  // Filter Management Functions
+  const addFilter = () => {
+    setFilters([...filters, { id: Date.now(), field: "", operator: "contains", value: "" }]);
+  };
+
+  const updateFilter = (id, key, value) => {
+    setFilters(filters.map(f => f.id === id ? { ...f, [key]: value } : f));
+  };
+
+  const removeFilter = (id) => {
+    setFilters(filters.filter(f => f.id !== id));
+  };
+
+  const clearAllFilters = () => setFilters([]);
+
+  // Match value against operator
+  const matchValue = (value, searchVal, operator) => {
+    switch (operator) {
+      case "contains": return String(value || "").toLowerCase().includes(searchVal);
+      case "equals": return String(value || "").toLowerCase() === searchVal;
+      case "startsWith": return String(value || "").toLowerCase().startsWith(searchVal);
+      case "greaterThan": return Number(value) > Number(searchVal);
+      case "lessThan": return Number(value) < Number(searchVal);
+      default: return true;
+    }
+  };
+
+  // Filter Orders with Nested Service Support
+  const filterOrders = (orders) => {
+    const activeFilters = filters.filter(f => f.field && f.value.trim());
+    if (activeFilters.length === 0) return orders;
+
+    return orders.filter(order => {
+      return activeFilters.every(filter => {
+        const fieldConfig = FILTERABLE_FIELDS.find(f => f.key === filter.field);
+        const searchVal = filter.value.trim().toLowerCase();
+
+        // Handle nested service fields
+        if (fieldConfig?.nested) {
+          const services = order.services || [];
+          return services.some(svc => {
+            const value = svc[fieldConfig.nestedKey];
+            return matchValue(value, searchVal, filter.operator);
+          });
+        }
+
+        // Handle order-level fields
+        const value = order[filter.field];
+        return matchValue(value, searchVal, filter.operator);
+      });
+    });
+  };
+
   const handleTransform = () => {
     setIsLoading(true);
     setError("");
     setSuccess("");
-    
+
     try {
       const parsed = JSON.parse(input);
       const result = transformData(parsed);
-      
+
       // Debug: Log order information
       console.log("Transformed orders:", result.map(order => ({
         soNo: order.soNo,
         shipCust: order.shipCust,
         itemCnt: order.itemCnt
       })));
-      
+
       setOutput(JSON.stringify(result, null, 2));
-      
+
       // Generate CSV
       const csvContent = generateCSV(result);
       setCsvOutput(csvContent);
-      
+
       setSuccess(`✅ Successfully transformed ${result.length} order(s) and generated CSV`);
     } catch (e) {
       setError(`❌ Invalid JSON input: ${e.message}`);
@@ -493,7 +571,7 @@ export default function App() {
 
       const responseText = await response.text();
       let responseData;
-      
+
       try {
         responseData = JSON.parse(responseText);
       } catch {
@@ -501,7 +579,7 @@ export default function App() {
       }
 
       setPostResponse(JSON.stringify(responseData, null, 2));
-      
+
       if (response.ok) {
         setSuccess(`✅ POST request successful! Status: ${response.status}`);
       } else {
@@ -649,8 +727,8 @@ export default function App() {
   };
 
   return (
-    <div style={{ 
-      padding: 24, 
+    <div style={{
+      padding: 24,
       fontFamily: "system-ui, -apple-system, sans-serif",
       maxWidth: "1400px",
       margin: "0 auto",
@@ -664,16 +742,16 @@ export default function App() {
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         marginBottom: "24px"
       }}>
-        <h1 style={{ 
-          margin: "0 0 8px 0", 
+        <h1 style={{
+          margin: "0 0 8px 0",
           color: "#2c3e50",
           fontSize: "28px",
           fontWeight: "600"
         }}>
           🔄 TMS JSON Reformatting Tool
         </h1>
-        <p style={{ 
-          margin: "0 0 24px 0", 
+        <p style={{
+          margin: "0 0 24px 0",
           color: "#6c757d",
           fontSize: "16px"
         }}>
@@ -744,7 +822,7 @@ export default function App() {
           onMouseOver={(e) => e.target.style.backgroundColor = "#c82333"}
           onMouseOut={(e) => e.target.style.backgroundColor = "#dc3545"}
         >
-         ️ Clear All
+          ️ Clear All
         </button>
         <button
           onClick={() => setShowPostConfig(!showPostConfig)}
@@ -778,7 +856,7 @@ export default function App() {
           <h4 style={{ margin: "0 0 16px 0", color: "#2c3e50" }}>
             🌐 POST Request Configuration
           </h4>
-          
+
           {/* URL Input */}
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: "500" }}>
@@ -885,7 +963,7 @@ export default function App() {
               {isPosting ? "⏳ Sending..." : "📤 Send POST Request"}
             </button>
           </div>
-          
+
           {/* POST Response */}
           {postResponse && (
             <div style={{ marginTop: "16px" }}>
@@ -924,8 +1002,8 @@ export default function App() {
             <h4 style={{ margin: 0, color: "#2c3e50", fontSize: "18px" }}>
               📥 Input JSON
             </h4>
-            <span style={{ 
-              fontSize: "12px", 
+            <span style={{
+              fontSize: "12px",
               color: "#6c757d",
               backgroundColor: "#e9ecef",
               padding: "4px 8px",
@@ -954,7 +1032,7 @@ export default function App() {
             onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
           />
         </div>
-        
+
         <div style={{ flex: "1", minWidth: "500px" }}>
           <div style={{
             display: "flex",
@@ -966,8 +1044,8 @@ export default function App() {
               📤 Output JSON
             </h4>
             <div style={{ display: "flex", gap: "8px" }}>
-              <span style={{ 
-                fontSize: "12px", 
+              <span style={{
+                fontSize: "12px",
                 color: "#6c757d",
                 backgroundColor: "#e9ecef",
                 padding: "4px 8px",
@@ -1027,8 +1105,8 @@ export default function App() {
               📊 CSV Output
             </h4>
             <div style={{ display: "flex", gap: "8px" }}>
-              <span style={{ 
-                fontSize: "12px", 
+              <span style={{
+                fontSize: "12px",
                 color: "#6c757d",
                 backgroundColor: "#e9ecef",
                 padding: "4px 8px",
@@ -1092,9 +1170,11 @@ export default function App() {
       {output && (() => {
         try {
           const parsedOutput = JSON.parse(output);
-          if (Array.isArray(parsedOutput) && parsedOutput.length > 1) {
+          if (Array.isArray(parsedOutput) && parsedOutput.length > 0) {
+            const filteredOrders = filterOrders(parsedOutput);
             return (
               <div style={{ marginTop: "24px" }}>
+                {/* Header */}
                 <div style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -1102,7 +1182,10 @@ export default function App() {
                   marginBottom: "16px"
                 }}>
                   <h4 style={{ margin: 0, color: "#2c3e50", fontSize: "18px" }}>
-                    📦 Individual Orders ({parsedOutput.length} orders)
+                    📦 Individual Orders
+                    {filters.length > 0 && filters.some(f => f.field && f.value.trim())
+                      ? ` (${filteredOrders.length} of ${parsedOutput.length})`
+                      : ` (${parsedOutput.length} orders)`}
                   </h4>
                   <button
                     onClick={handleDownloadAllOrders}
@@ -1123,72 +1206,240 @@ export default function App() {
                     📥 Download All Orders ({parsedOutput.length})
                   </button>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {parsedOutput.map((order, index) => (
-                    <div key={index} style={{
-                      backgroundColor: "white",
-                      borderRadius: "8px",
-                      padding: "16px",
-                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                      border: "1px solid #e9ecef"
-                    }}>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "12px"
-                      }}>
-                        <div>
-                          <h5 style={{ margin: "0 0 4px 0", color: "#2c3e50", fontSize: "16px" }}>
-                            Order #{index + 1}: {order.soNo || 'N/A'}
-                          </h5>
-                          <p style={{ margin: "0", color: "#6c757d", fontSize: "14px" }}>
-                            Customer: {order.shipCust || 'N/A'} | Store: {order.storeNo || 'N/A'} | Items: {order.itemCnt || 0}
-                          </p>
-                          <p style={{ margin: "4px 0 0 0", color: "#28a745", fontSize: "12px", fontWeight: "500" }}>
-                            📄 File: order_{order.soNo || index + 1}_{new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json
-                          </p>
-                        </div>
+
+                {/* Filter Bar */}
+                <div style={{
+                  marginBottom: "16px",
+                  padding: "16px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "8px",
+                  border: "1px solid #e9ecef"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <span style={{ fontWeight: "600", color: "#2c3e50" }}>🔍 Filters</span>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        onClick={addFilter}
+                        style={{
+                          padding: "6px 12px",
+                          backgroundColor: "#28a745",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          fontWeight: "500"
+                        }}
+                      >
+                        + Add Filter
+                      </button>
+                      {filters.length > 0 && (
                         <button
-                          onClick={() => handleDownloadOrder(order, index)}
+                          onClick={clearAllFilters}
                           style={{
-                            padding: "8px 16px",
-                            backgroundColor: "#28a745",
+                            padding: "6px 12px",
+                            backgroundColor: "#dc3545",
                             color: "white",
                             border: "none",
-                            borderRadius: "6px",
+                            borderRadius: "4px",
                             cursor: "pointer",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            transition: "background-color 0.2s"
+                            fontSize: "13px",
+                            fontWeight: "500"
                           }}
-                          onMouseOver={(e) => e.target.style.backgroundColor = "#218838"}
-                          onMouseOut={(e) => e.target.style.backgroundColor = "#28a745"}
                         >
-                          💾 Download Order JSON
+                          Clear All
                         </button>
-                      </div>
-                      <div style={{
-                        backgroundColor: "#f8f9fa",
-                        borderRadius: "4px",
-                        padding: "12px",
-                        maxHeight: "200px",
-                        overflow: "auto"
-                      }}>
-                        <pre style={{
-                          margin: 0,
-                          fontSize: "12px",
-                          fontFamily: "monospace",
-                          color: "#495057",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word"
-                        }}>
-                          {JSON.stringify(order, null, 2)}
-                        </pre>
-                      </div>
+                      )}
                     </div>
-                  ))}
+                  </div>
+
+                  {filters.length === 0 ? (
+                    <p style={{ margin: 0, color: "#6c757d", fontSize: "14px" }}>
+                      No filters applied. Click "+ Add Filter" to filter orders.
+                    </p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {filters.map(filter => (
+                        <div key={filter.id} style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                          <select
+                            value={filter.field}
+                            onChange={(e) => updateFilter(filter.id, "field", e.target.value)}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "4px",
+                              border: "1px solid #ced4da",
+                              fontSize: "13px",
+                              minWidth: "180px"
+                            }}
+                          >
+                            <option value="">Select Field...</option>
+                            <optgroup label="📋 Order Fields">
+                              {FILTERABLE_FIELDS.filter(f => !f.nested).map(f => (
+                                <option key={f.key} value={f.key}>{f.label}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="🔧 Service Fields">
+                              {FILTERABLE_FIELDS.filter(f => f.nested).map(f => (
+                                <option key={f.key} value={f.key}>{f.label}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+
+                          <select
+                            value={filter.operator}
+                            onChange={(e) => updateFilter(filter.id, "operator", e.target.value)}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "4px",
+                              border: "1px solid #ced4da",
+                              fontSize: "13px"
+                            }}
+                          >
+                            <option value="contains">Contains</option>
+                            <option value="equals">Equals</option>
+                            <option value="startsWith">Starts With</option>
+                            <option value="greaterThan">Greater Than</option>
+                            <option value="lessThan">Less Than</option>
+                          </select>
+
+                          <input
+                            type="text"
+                            value={filter.value}
+                            onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
+                            placeholder="Enter value..."
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "4px",
+                              border: "1px solid #ced4da",
+                              fontSize: "13px",
+                              minWidth: "200px",
+                              flex: "1"
+                            }}
+                          />
+
+                          <button
+                            onClick={() => removeFilter(filter.id)}
+                            style={{
+                              padding: "8px 12px",
+                              backgroundColor: "#6c757d",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "13px"
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Order List */}
+                {filteredOrders.length === 0 ? (
+                  <div style={{
+                    padding: "32px",
+                    textAlign: "center",
+                    backgroundColor: "#fff3cd",
+                    borderRadius: "8px",
+                    color: "#856404"
+                  }}>
+                    <p style={{ margin: 0, fontSize: "16px" }}>⚠️ No orders match your filter criteria.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {filteredOrders.map((order, index) => (
+                      <div key={order.soNo || index} style={{
+                        backgroundColor: "white",
+                        borderRadius: "8px",
+                        padding: "16px",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "12px"
+                        }}>
+                          <div>
+                            <h5 style={{ margin: "0 0 4px 0", color: "#2c3e50", fontSize: "16px" }}>
+                              {order.soNo || 'N/A'}
+                            </h5>
+                            <p style={{ margin: "0", color: "#6c757d", fontSize: "14px" }}>
+                              Customer: {order.shipCust || 'N/A'} | Store: {order.storeNo || 'N/A'} | Items: {order.itemCnt || 0}
+                            </p>
+                            <p style={{ margin: "4px 0 0 0", color: "#28a745", fontSize: "12px", fontWeight: "500" }}>
+                              📄 File: order_{order.soNo || index + 1}_{new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json
+                            </p>
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(JSON.stringify([order], null, 2));
+                                setSuccess(`✅ Order ${order.soNo} copied to clipboard!`);
+                                setTimeout(() => setSuccess(""), 2000);
+                              }}
+                              style={{
+                                padding: "8px 16px",
+                                backgroundColor: "#17a2b8",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s"
+                              }}
+                              onMouseOver={(e) => e.target.style.backgroundColor = "#138496"}
+                              onMouseOut={(e) => e.target.style.backgroundColor = "#17a2b8"}
+                            >
+                              📋 Copy
+                            </button>
+                            <button
+                              onClick={() => handleDownloadOrder(order, index)}
+                              style={{
+                                padding: "8px 16px",
+                                backgroundColor: "#28a745",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s"
+                              }}
+                              onMouseOver={(e) => e.target.style.backgroundColor = "#218838"}
+                              onMouseOut={(e) => e.target.style.backgroundColor = "#28a745"}
+                            >
+                              💾 Download
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "4px",
+                          padding: "12px",
+                          maxHeight: "200px",
+                          overflow: "auto"
+                        }}>
+                          <pre style={{
+                            margin: 0,
+                            fontSize: "12px",
+                            fontFamily: "monospace",
+                            color: "#495057",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word"
+                          }}>
+                            {JSON.stringify(order, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           }
@@ -1197,10 +1448,10 @@ export default function App() {
           return null;
         }
       })()}
-      
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "center", 
+
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
         marginTop: "24px",
         gap: "12px"
       }}>
@@ -1241,8 +1492,8 @@ export default function App() {
         <h5 style={{ margin: "0 0 12px 0", color: "#1565c0" }}>
           📋 Enhanced Features:
         </h5>
-        <ul style={{ 
-          margin: 0, 
+        <ul style={{
+          margin: 0,
           paddingLeft: "20px",
           color: "#1976d2",
           fontSize: "14px",
